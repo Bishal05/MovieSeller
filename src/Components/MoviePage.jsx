@@ -6,7 +6,7 @@ export default class MoviePage extends Component{
     state={
         movies:getMovies(),
         currSearchText:"",
-        filterMovie:getMovies()
+        // filterMovie:getMovies() source of the input should be only one
     }
 
     deleteEntry=(id)=>{
@@ -20,24 +20,35 @@ export default class MoviePage extends Component{
 
     setCurrentText=(e)=>{
         let task=e.target.value;
-        let filterMovieArr=this.state.movies.filter((movieObj)=>{
-            let title=movieObj.title.trim().toLowerCase();
-            return title.includes(task);
-        })
 
-        if(task==""){
-            filterMovieArr=this.state.movies
-        }
+        // We cannot create state for everything
+        // let filterMovieArr=this.state.movies.filter((movieObj)=>{
+        //     let title=movieObj.title.trim().toLowerCase();
+        //     return title.includes(task);
+        // })
+
+        // if(task==""){
+        //     filterMovieArr=this.state.movies
+        // }
 
         this.setState({
             currSearchText:task,
-            filterMovie:filterMovieArr
         })
     }
 
     render(){
         // console.log(this.state.movies);
-        let {movies,currSearchText,filterMovie}=this.state;
+        let {movies,currSearchText}=this.state;
+        // rather adding a new State we did everything here because whenever our state changes because of input(search) our render function will be called again
+        // and we will print the changes in the filterMovieArr
+        let filterMovieArr=movies.filter((movieObj)=>{
+            let title=movieObj.title.trim().toLowerCase();
+            return title.includes(currSearchText.toLowerCase());
+        })
+
+        if(currSearchText==""){
+            filterMovieArr=this.state.movies
+        }
         return(
             
             <div className="row">
@@ -54,7 +65,7 @@ export default class MoviePage extends Component{
                             </tr>
                         </thead>
                         <tbody>
-                            {filterMovie.map((movieObj)=>{
+                            {filterMovieArr.map((movieObj)=>{
                                 return(
                                     <tr scope="row" key={movieObj._id}>
                                         <td>{movieObj.title}</td>
