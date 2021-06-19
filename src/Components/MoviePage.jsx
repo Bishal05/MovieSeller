@@ -1,25 +1,18 @@
 import React,{Component} from "react"
 import {getMovies} from "../temp/movieService"
+import Geners from "./Geners"
+import Pagination from "./Pagination"
+import {Link} from "react-router-dom"
 
 
 export default class MoviePage extends Component{
     state={
-        movies:getMovies(),
         genres: [{ id: 1, name: "All Genres" }],
         currSearchText:"",
         pageNo:1,
         limit:4,
         currentGener:"All Genres"
         // filterMovie:getMovies() source of the input should be only one
-    }
-
-    deleteEntry=(id)=>{
-        let filterMovie=this.state.movies.filter((movieObj)=>{
-            return movieObj._id!=id;
-        })
-        this.setState({
-            movies:filterMovie
-        })
     }
 
     setCurrentText=(e)=>{
@@ -43,7 +36,7 @@ export default class MoviePage extends Component{
     sortByStock=(e)=>{
         let className=e.target.className.trim();
         let sortedMovie;
-        let {movies}=this.state;
+        let {movies}=this.props;
 
         if(className=="fas fa-sort-up"){
             sortedMovie=movies.sort((movieObjA,movieObjB)=>{
@@ -56,15 +49,12 @@ export default class MoviePage extends Component{
             })
         }
 
-        this.setState({
-            movies:sortedMovie
-        })
     }
 
     sortByPrice=(e)=>{
         let className=e.target.className.trim();
         let sortedMovie;
-        let {movies}=this.state;
+        let {movies}=this.props;
 
         if(className=="fas fa-sort-up"){
             sortedMovie=movies.sort((movieObjA,movieObjB)=>{
@@ -75,10 +65,6 @@ export default class MoviePage extends Component{
                 return movieObjB.dailyRentalRate-movieObjA.dailyRentalRate;
             });
         }
-
-        this.setState({
-            movies:sortedMovie
-        })
     }
 
     setPageNo=(e)=>{
@@ -107,12 +93,7 @@ export default class MoviePage extends Component{
 
     async componentDidMount() {
         // console.log(2);
-        let resp = await fetch("https://react-backend101.herokuapp.com/movies");
-        let jsonMovies = await resp.json();
-        this.setState({
-            movies: jsonMovies.movies
-        });
-        resp = await fetch("https://react-backend101.herokuapp.com/genres");
+        let resp = await fetch("https://react-backend101.herokuapp.com/genres");
         let jsonGenres = await resp.json();
         this.setState({
             genres: [...this.state.genres, ...jsonGenres.genres]
@@ -127,16 +108,19 @@ export default class MoviePage extends Component{
 
     render(){
         // console.log(this.state.movies);
-        let {movies,currSearchText,pageNo,limit,genres,currentGener}=this.state;
+        let {currSearchText,pageNo,limit,genres,currentGener}=this.state;
+        
+        let {movies,deleteEntry}=this.props
         // rather adding a new State we did everything here because whenever our state changes because of input(search) our render function will be called again
         // and we will print the changes in the filterMovieArr
         
         let filterMovieArr=movies;
-        
+        // console.log(filterMovieArr);
         if(currentGener!="All Genres"){
             filterMovieArr=filterMovieArr.filter((movieObj)=>{
                 return movieObj.genre.name==currentGener;
             })
+            console.log(filterMovieArr,"genre");
         }
         
         if(currSearchText!=""){
@@ -144,17 +128,15 @@ export default class MoviePage extends Component{
                 let title=movieObj.title.trim().toLowerCase();
                 return title.includes(currSearchText.toLowerCase());
             })
+            console.log(filterMovieArr,"search");
         }
-
+        
         let numberOfPages=Math.ceil(filterMovieArr.length/limit);
-        let pageNumberArr=[];
-        for(let i=0;i<numberOfPages;i++){
-            pageNumberArr.push(i+1);
-        }
 
         let si=(pageNo-1)*limit;
         let ei=si+limit
         filterMovieArr=movies.slice(si,ei);
+        console.log(filterMovieArr);
 
         // filterMovieArr=filterMovieArr.filter((movieObj)=>{
         //     return movieObj.genre.name==currentGener;
@@ -168,18 +150,13 @@ export default class MoviePage extends Component{
             
             <div className="row">
                 <div className="col-3">
-                    <ul className="list-group">
-                        {
-                            genres.map((generObj)=>{
-                                let activeGener=(generObj==currentGener ? "list-group-item active" : "list-group-item")
-                                return(
-                                    <li className={activeGener} key={generObj.id} onClick={()=>{this.filterMovieAccToGener(generObj.name)}}>{generObj.name}</li>
-                                )
-                            })
-                        }
-                    </ul>
+                    <Geners genres={genres} currentGener={currentGener} filterMovieAccToGener={this.filterMovieAccToGener}></Geners>
                 </div>
                 <div className="col-9">
+                    <button className="btn btn-primary">
+                        <Link to="/new" className="text-light" >New </Link>
+                    </button><br /><br />
+
                     <input type="search" value={currSearchText} onChange={this.setCurrentText} />
                     <input type="Number" className="col-1" placeholder="limit" value={limit} onChange={this.setLimit} />
                     <table className="table">
@@ -200,7 +177,9 @@ export default class MoviePage extends Component{
                             </tr>
                         </thead>
                         <tbody>
-                            {filterMovieArr.map((movieObj)=>{
+                            
+                            {
+                            filterMovieArr.map((movieObj)=>{
                                 return(
                                     <tr scope="row" key={movieObj._id}>
                                         <td >{movieObj.title}</td>
@@ -209,30 +188,24 @@ export default class MoviePage extends Component{
                                         <td>{movieObj.dailyRentalRate}</td>
                                         <td><button type="button" className="btn btn-danger" 
                                         onClick={()=>{
-                                           this.deleteEntry(movieObj._id);
+                                           deleteEntry(movieObj._id);
                                         }}>Delete</button></td>
                                     </tr>
                                 )
                             })}
                         </tbody>
                     </table>
-                    <nav  aria-label="..." className="col-2" >
-                        <ul className="pagination">
-                            {
-                                pageNumberArr.map((pageNumber)=>{
-                                    let additional = pageNumber == pageNo ? "page-item active" : "page-item";
-                                    return(
-                                        <li className={additional} aria-current="page" onClick={()=>{this.showMovies(pageNumber)}}>
-                                            <span className="page-link" >{pageNumber}</span>
-                                            {/* this.showMovies(pageNumber) we are doing this so that which ever page we are clicking only those movies according to limit should be shown on ui  */}
-                                        </li>
-                                    )
-                                })
-                            }
-                        </ul>
-                    </nav>
+                    <Pagination numberOfPages={numberOfPages} showMovies={this.showMovies} pageNo={pageNo}></Pagination>
                 </div>
             </div>
         )
     }
 }
+
+
+
+
+
+
+
+
